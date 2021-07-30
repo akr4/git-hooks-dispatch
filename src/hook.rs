@@ -1,0 +1,64 @@
+use anyhow::Result;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::process::ExitStatus;
+
+pub struct Hook {
+    pub path: PathBuf,
+    hook_type: HookType,
+}
+
+impl Hook {
+    pub fn exec(&self, args: &Vec<String>) -> Result<ExitStatus> {
+        let output = std::process::Command::new(&self.path).args(args).output()?;
+        std::io::stdout().write_all(&output.stdout).unwrap();
+        std::io::stderr().write_all(&output.stderr).unwrap();
+        Ok(output.status)
+    }
+
+    pub fn find_hook(path: &Path, hook_type: HookType) -> Option<Self> {
+        if !path.is_dir() {
+            return None;
+        }
+
+        let hooks_dir = path.join(Path::new("git-hooks"));
+
+        if !hooks_dir.is_dir() {
+            return None;
+        }
+
+        let hook_file = hooks_dir.join(hook_type.filename());
+
+        if !hook_file.exists() {
+            return None;
+        }
+
+        Some(Hook {
+            path: hook_file,
+            hook_type,
+        })
+    }
+}
+
+#[derive(Copy, Clone)]
+pub enum HookType {
+    PreCommit,
+    PostRewrite,
+}
+
+impl HookType {
+    pub fn from_name(name: &str) -> Option<Self> {
+        match name {
+            "pre-commit" => Some(HookType::PreCommit),
+            "post-rewrite" => Some(HookType::PostRewrite),
+            _ => None,
+        }
+    }
+
+    pub fn filename(&self) -> String {
+        match self {
+            Self::PreCommit => "pre-commit".to_string(),
+            Self::PostRewrite => "post-rewrite".to_string(),
+        }
+    }
+}
