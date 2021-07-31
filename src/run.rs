@@ -9,8 +9,11 @@ pub fn run<P: AsRef<Path>, E: Executor>(
     hook_name: &str,
     args: &Vec<String>,
     executor: &E,
+    hooks_dir_names: Vec<String>,
 ) -> Result<()> {
     assert!(repo_dir.as_ref().is_absolute());
+
+    log::debug!("hooks_dir_names = {:?}", hooks_dir_names);
 
     let hook_type = HookType::from_name(hook_name);
     if hook_type.is_none() {
@@ -33,9 +36,7 @@ pub fn run<P: AsRef<Path>, E: Executor>(
         let git_entry_path = Path::new(git_entry_path_str);
 
         for path in git_entry_path.ancestors() {
-            if !path.exists() {
-                continue;
-            }
+            log::debug!("testing path: {}", path.display());
             let abs_path = repo_dir.as_ref().join(path);
             if !abs_path.exists() {
                 continue;
@@ -46,14 +47,18 @@ pub fn run<P: AsRef<Path>, E: Executor>(
                     .to_str()
                     .ok_or(anyhow::Error::msg("failed to convert path to string"))?
             );
-            let hook = Hook::find_hook(&abs_path, hook_type);
+            let hook = Hook::find_hook(&abs_path, hook_type, &hooks_dir_names);
             if let Some(hook) = hook {
                 let hook_path_str = hook
                     .path
                     .to_str()
                     .ok_or(anyhow::Error::msg("failed to convert path to string"))?;
                 log::debug!("found hook {}", hook_path_str);
-                log::info!("executing hook ({}) in ({})", hook_path_str, abs_path.display());
+                log::info!(
+                    "executing hook ({}) in ({})",
+                    hook_path_str,
+                    abs_path.display()
+                );
                 let status = executor.execute(&abs_path, &hook.path, args)?;
                 if status != 0 {
                     log::error!("hook exit with status code ({})", status);
@@ -113,12 +118,22 @@ mod tests {
         let mut mock = MockExecutor::new();
         mock.expect_execute()
             .times(1)
-            .withf(move |working_dir: &Path, hook_path: &Path, args: &Vec<String>| {
-                working_dir == working_dir_abs_path && hook_path == pre_commit_abs_path && args.len() == 0
-            })
+            .withf(
+                move |working_dir: &Path, hook_path: &Path, args: &Vec<String>| {
+                    working_dir == working_dir_abs_path
+                        && hook_path == pre_commit_abs_path
+                        && args.len() == 0
+                },
+            )
             .returning(|_, _, _| Ok(0));
 
-        run(repo_dir.path(), "pre-commit", &vec![], &mock)?;
+        run(
+            repo_dir.path(),
+            "pre-commit",
+            &vec![],
+            &mock,
+            vec!["git-hooks".to_string()],
+        )?;
 
         Ok(())
     }

@@ -37,6 +37,34 @@ mvn antrun:run@ktlint-format
 
 
 
+## Hooks are executed recursively
+
+In the below example, if `./foo/bar/B` is changed, `pre-commit` hooks are executed recursively in the following order:
+
+1. `./foo/bar/git-hooks/pre-commit`
+2. `./foo/git-hooks/pre-commit`
+
+```
+.
+├── .git
+│  └── hooks
+│     └── pre-commit
+└── foo
+   ├── A
+   ├── git-hooks
+   │  └── pre-commit
+   └── bar
+      ├── B
+      └── git-hooks
+         └── pre-commit
+```
+
+
+
+## Hooks dir name
+
+`git-hooks-dispatch` searches a hook dir which name is `hooks-dir` or `.hooks-dir` by default. You can change it by `--hooks-dir` option.
+
 
 
 ### Manage hooks in your Git repository (recommended)
