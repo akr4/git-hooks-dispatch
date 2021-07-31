@@ -10,6 +10,8 @@ pub fn run<P: AsRef<Path>, E: Executor>(
     args: &Vec<String>,
     executor: &E,
 ) -> Result<()> {
+    assert!(repo_dir.as_ref().is_absolute());
+
     let hook_type = HookType::from_name(hook_name);
     if hook_type.is_none() {
         log::error!("invalid hook name {}", hook_name);
@@ -19,37 +21,40 @@ pub fn run<P: AsRef<Path>, E: Executor>(
 
     let repo = git2::Repository::open(repo_dir.as_ref().clone()).unwrap();
     for e in repo.statuses(None).unwrap().iter() {
-        let path_str = e
+        let git_entry_path_str = e
             .path()
             .ok_or(anyhow::Error::msg("failed to convert path to string"))?;
         let status = e.status();
-        log::debug!("found git entry: {} ({:?})", path_str, status);
+        log::debug!("found git entry: {} ({:?})", git_entry_path_str, status);
         if !is_changed(status) {
             continue;
         }
-        log::debug!("found changed git entry: {}", path_str);
-        let path = Path::new(path_str);
+        log::debug!("found changed git entry: {}", git_entry_path_str);
+        let git_entry_path = Path::new(git_entry_path_str);
 
-        for x in path.ancestors() {
-            let path_from_root = repo_dir.as_ref().join(x);
-            if !path_from_root.exists() {
+        for path in git_entry_path.ancestors() {
+            if !path.exists() {
+                continue;
+            }
+            let abs_path = repo_dir.as_ref().join(path);
+            if !abs_path.exists() {
                 continue;
             }
             log::debug!(
                 "searching hook in {}",
-                path_from_root
+                abs_path
                     .to_str()
                     .ok_or(anyhow::Error::msg("failed to convert path to string"))?
             );
-            let hook = Hook::find_hook(&path_from_root, hook_type);
+            let hook = Hook::find_hook(&abs_path, hook_type);
             if let Some(hook) = hook {
                 let hook_path_str = hook
                     .path
                     .to_str()
                     .ok_or(anyhow::Error::msg("failed to convert path to string"))?;
                 log::debug!("found hook {}", hook_path_str);
-                log::info!("executing hook ({})", hook_path_str);
-                let status = executor.execute(&hook.path, args)?;
+                log::info!("executing hook ({}) in ({})", hook_path_str, abs_path.display());
+                let status = executor.execute(&abs_path, &hook.path, args)?;
                 if status != 0 {
                     log::error!("hook exit with status code ({})", status);
                     std::process::exit(status);
@@ -103,13 +108,15 @@ mod tests {
         index.add_all(vec![a], git2::IndexAddOption::DEFAULT, None)?;
         index.write()?;
 
+        let working_dir_abs_path = repo_dir.path().join("1");
+
         let mut mock = MockExecutor::new();
         mock.expect_execute()
             .times(1)
-            .withf(move |path: &Path, args: &Vec<String>| {
-                path == pre_commit_abs_path && args.len() == 0
+            .withf(move |working_dir: &Path, hook_path: &Path, args: &Vec<String>| {
+                working_dir == working_dir_abs_path && hook_path == pre_commit_abs_path && args.len() == 0
             })
-            .returning(|_, _| Ok(0));
+            .returning(|_, _, _| Ok(0));
 
         run(repo_dir.path(), "pre-commit", &vec![], &mock)?;
 

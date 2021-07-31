@@ -11,5 +11,10 @@ mod run;
 fn main() -> Result<()> {
     env_logger::init();
     let opt = Opt::from_args();
-    run(".", &opt.hook, &opt.args, &executor::ExecutorImpl::new())
+    run(
+        std::env::current_dir()?,
+        &opt.hook,
+        &opt.args,
+        &executor::ExecutorImpl::new(),
+    )
 }
