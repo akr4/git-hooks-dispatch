@@ -1,0 +1,22 @@
+name: Test
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install Tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gettext-base
+
+    - uses: actions/checkout@v2
+
+    - name: Test
+      run: |
+        cargo test

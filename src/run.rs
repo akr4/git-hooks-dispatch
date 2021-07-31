@@ -11,7 +11,7 @@ pub fn run<P: AsRef<Path>, E: Executor>(
     executor: &E,
     hooks_dir_names: Vec<String>,
 ) -> Result<()> {
-    assert!(repo_dir.as_ref().is_absolute());
+    debug_assert!(repo_dir.as_ref().is_absolute());
 
     log::debug!("hooks_dir_names = {:?}", hooks_dir_names);
 
@@ -92,11 +92,10 @@ mod tests {
     use std::io::Write;
     use std::path::Path;
     use tempdir::TempDir;
+    use mockall::Sequence;
 
     #[test]
     fn should_run_hook() -> Result<()> {
-        env_logger::init();
-
         let repo_dir = TempDir::new("repo")?;
 
         std::fs::create_dir(repo_dir.path().join("1"))?;
@@ -139,17 +138,113 @@ mod tests {
     }
 
     #[test]
-    fn should_run_hook_recursively() {
-        todo!()
+    fn should_run_hook_recursively() -> Result<()> {
+        let repo_dir = TempDir::new("repo")?;
+
+        std::fs::create_dir(repo_dir.path().join("1"))?;
+        std::fs::create_dir(repo_dir.path().join("1/git-hooks"))?;
+        std::fs::create_dir(repo_dir.path().join("1/2"))?;
+        std::fs::create_dir(repo_dir.path().join("1/2/git-hooks"))?;
+
+        let a = Path::new("1/2/a");
+        std::fs::File::create(repo_dir.path().join(a))?.write_all("a".as_bytes())?;
+
+        let pre_commit_abs_path1 = repo_dir.path().join("1/git-hooks/pre-commit");
+        std::fs::File::create(pre_commit_abs_path1.as_path())?;
+        let pre_commit_abs_path2 = repo_dir.path().join("1/2/git-hooks/pre-commit");
+        std::fs::File::create(pre_commit_abs_path2.as_path())?;
+
+        let repo = git2::Repository::init(repo_dir.path()).unwrap();
+        let mut index = repo.index()?;
+        index.add_all(vec![a], git2::IndexAddOption::DEFAULT, None)?;
+        index.write()?;
+
+        let working_dir_abs_path1 = repo_dir.path().join("1");
+        let working_dir_abs_path2 = repo_dir.path().join("1/2");
+
+        let mut seq = Sequence::new();
+        let mut mock = MockExecutor::new();
+        mock.expect_execute()
+            .withf(
+                move |working_dir: &Path, hook_path: &Path, args: &Vec<String>| {
+                    working_dir == working_dir_abs_path2
+                        && hook_path == pre_commit_abs_path2
+                        && args.len() == 0
+                },
+            )
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|_, _, _| Ok(0));
+        mock.expect_execute()
+            .withf(
+                move |working_dir: &Path, hook_path: &Path, args: &Vec<String>| {
+                    working_dir == working_dir_abs_path1
+                        && hook_path == pre_commit_abs_path1
+                        && args.len() == 0
+                },
+            )
+            .times(1)
+            .in_sequence(&mut seq)
+            .returning(|_, _, _| Ok(0));
+
+        run(
+            repo_dir.path(),
+            "pre-commit",
+            &vec![],
+            &mock,
+            vec!["git-hooks".to_string()],
+        )?;
+
+        Ok(())
     }
 
     #[test]
-    fn should_run_hook_once() {
-        todo!()
+    fn should_run_hook_once() -> Result<()> {
+        let repo_dir = TempDir::new("repo")?;
+
+        std::fs::create_dir(repo_dir.path().join("1"))?;
+        std::fs::create_dir(repo_dir.path().join("1/git-hooks"))?;
+
+        let a = Path::new("1/a");
+        std::fs::File::create(repo_dir.path().join(a))?.write_all("a".as_bytes())?;
+        let b = Path::new("1/b");
+        std::fs::File::create(repo_dir.path().join(a))?.write_all("a".as_bytes())?;
+
+        let pre_commit_abs_path = repo_dir.path().join("1/git-hooks/pre-commit");
+        std::fs::File::create(pre_commit_abs_path.as_path())?;
+
+        let repo = git2::Repository::init(repo_dir.path()).unwrap();
+        let mut index = repo.index()?;
+        index.add_all(vec![a, b], git2::IndexAddOption::DEFAULT, None)?;
+        index.write()?;
+
+        let working_dir_abs_path = repo_dir.path().join("1");
+
+        let mut mock = MockExecutor::new();
+        mock.expect_execute()
+            .times(1)
+            .withf(
+                move |working_dir: &Path, hook_path: &Path, args: &Vec<String>| {
+                    working_dir == working_dir_abs_path
+                        && hook_path == pre_commit_abs_path
+                        && args.len() == 0
+                },
+            )
+            .returning(|_, _, _| Ok(0));
+
+        run(
+            repo_dir.path(),
+            "pre-commit",
+            &vec![],
+            &mock,
+            vec!["git-hooks".to_string()],
+        )?;
+
+        Ok(())
     }
 
     #[test]
-    fn should_exit_if_hook_exit_with_error() {
+    fn should_exit_if_hook_exit_with_error() -> Result<()> {
         todo!()
     }
 }
