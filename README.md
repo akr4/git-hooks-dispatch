@@ -31,7 +31,7 @@ For example:
 
 ```
 #!/bin/sh
-npm run lint
+npm run lint-staged
 ```
 
 `./sub-project2/git-hooks/pre-commit`
