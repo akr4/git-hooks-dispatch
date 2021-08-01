@@ -1,4 +1,4 @@
-name: Test
+name: Release
 
 on:
   push:
@@ -14,6 +14,5 @@ jobs:
 
     - name: Release
       run: |
+        cargo login ${CRATES_IO_TOKEN}
         cargo release
-
-
