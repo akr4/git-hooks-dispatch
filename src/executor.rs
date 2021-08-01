@@ -1,9 +1,10 @@
 use anyhow::Result;
-#[cfg(test)]
-use mockall::automock;
 use std::io::Write;
 use std::path::Path;
 use std::process::Command;
+
+#[cfg(test)]
+use mockall::automock;
 
 #[cfg_attr(test, automock)]
 pub trait Executor {
