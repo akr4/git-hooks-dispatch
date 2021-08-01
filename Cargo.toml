@@ -3,12 +3,19 @@ name = "git-hooks-dispatch"
 version = "0.1.0"
 authors = ["Akira Ueda <ue@gol.com>"]
 edition = "2018"
+license = "MIT"
+description = "Run hooks only in a directory where files are changed. Useful for monorepo."
+repository = "https://github.com/akr4/git-hooks-dispatch"
+keywords = ["git"]
+categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]
 anyhow = "1.0.42"
 env_logger = "0.9.0"
 git2 = "0.13.20"
 log = "0.4.14"
-mockall = "0.10.2"
 structopt = "0.3.22"
+
+[dev-dependencies]
+mockall = "0.10.2"
 tempdir = "0.3.7"
