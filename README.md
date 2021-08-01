@@ -4,7 +4,15 @@ Run hooks only in a directory where files are changed. Useful for monorepo.
 
 
 
-## Set up
+## Install
+
+```
+cargo install git-hooks-dispatch
+```
+
+
+
+## Setting up
 
 Set up hooks you want as the following:
 
@@ -12,7 +20,7 @@ Hook file (e.g. `.git/hooks/pre-commit`)
 
 ```
 #!/bin/sh
-git-hooks-dispatch $(basename $0) "$@"
+git-hooks-dispatch $(basename $0) -- "$@"
 ```
 
 Make sure the file has permission to execute.

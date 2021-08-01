@@ -2,7 +2,7 @@ name: Test
 
 on:
   push:
-    branches: [ develop, main ]
+    branches: [ main ]
 
 jobs:
   build:
@@ -12,6 +12,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Test
+    - name: Release
       run: |
-        cargo test
+        cargo release
+
+
