@@ -12,10 +12,21 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Release
+    - name: Setup git user
+      run: |
+        git config --global user.email "ue@gol.com"
+        git config --global user.name "UEDA Akira"
+
+    - name: Install cargo-release
+      run: |
+        cargo install cargo-release
+
+    - name: Cargo login
       env:
         CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
       run: |
-        cargo install cargo-release
         cargo login ${CRATES_IO_TOKEN}
+
+    - name: Release
+      run: |
         cargo release --no-confirm
