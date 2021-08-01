@@ -2,7 +2,7 @@
 
 Run hooks only in a directory where files are changed. Useful for monorepo.
 
-![test](https://github.com/akr4/git-hooks-dispatch/actions/workflows/test.yml/badge.svg)
+![Crates.io](https://img.shields.io/crates/v/git-hooks-dispatch) ![test](https://github.com/akr4/git-hooks-dispatch/actions/workflows/test.yml/badge.svg)
 
 ## Install
 
