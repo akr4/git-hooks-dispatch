@@ -16,11 +16,12 @@ fn main() -> Result<()> {
     } else {
         vec!["git-hooks".to_string(), ".git-hooks".to_string()]
     };
-    run(
+    let status_code = run(
         std::env::current_dir()?,
         &opt.hook,
         &opt.args,
         &executor::ExecutorImpl::new(),
         hooks_dir_names,
-    )
+    )?;
+    std::process::exit(status_code);
 }

@@ -4,7 +4,7 @@ Run hooks only in a directory where files are changed. Useful for monorepo.
 
 ![test](https://github.com/akr4/git-hooks-dispatch/actions/workflows/test.yml/badge.svg)
 
-## Set up
+## Setting up
 
 Set up hooks you want as the following:
 
@@ -35,8 +35,6 @@ npm run lint
 mvn antrun:run@ktlint-format
 ```
 
-
-
 ## Hooks are executed recursively
 
 In the below example, if `./foo/bar/B` is changed, `pre-commit` hooks are executed recursively in the following order:
@@ -59,17 +57,12 @@ In the below example, if `./foo/bar/B` is changed, `pre-commit` hooks are execut
          └── pre-commit
 ```
 
-
-
 ## Hooks dir name
 
 `git-hooks-dispatch` searches a hook dir which name is `hooks-dir` or `.hooks-dir` by default. You can change it by `--hooks-dir` option.
-
-
 
 ### Manage hooks in your Git repository (recommended)
 
 ```
 git config core.hooksPath git-hooks
 ```
-

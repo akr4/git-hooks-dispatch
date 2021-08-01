@@ -4,13 +4,15 @@ use anyhow::Result;
 use git2::Status;
 use std::path::Path;
 
+type StatusCode = i32;
+
 pub fn run<P: AsRef<Path>, E: Executor>(
     repo_dir: P,
     hook_name: &str,
     args: &Vec<String>,
     executor: &E,
     hooks_dir_names: Vec<String>,
-) -> Result<()> {
+) -> Result<StatusCode> {
     debug_assert!(repo_dir.as_ref().is_absolute());
 
     log::debug!("hooks_dir_names = {:?}", hooks_dir_names);
@@ -18,7 +20,7 @@ pub fn run<P: AsRef<Path>, E: Executor>(
     let hook_type = HookType::from_name(hook_name);
     if hook_type.is_none() {
         log::error!("invalid hook name {}", hook_name);
-        std::process::exit(1);
+        return Ok(1);
     }
     let hook_type = hook_type.unwrap();
 
@@ -62,13 +64,13 @@ pub fn run<P: AsRef<Path>, E: Executor>(
                 let status = executor.execute(&abs_path, &hook.path, args)?;
                 if status != 0 {
                     log::error!("hook exit with status code ({})", status);
-                    std::process::exit(status);
+                    return Ok(status);
                 }
             }
         }
     }
 
-    Ok(())
+    Ok(0)
 }
 
 fn is_changed(status: Status) -> bool {
@@ -79,7 +81,6 @@ fn is_changed(status: Status) -> bool {
         || status.is_index_typechange()
         || status.is_wt_deleted()
         || status.is_wt_modified()
-        // || status.is_wt_new()
         || status.is_wt_renamed()
         || status.is_wt_typechange()
 }
@@ -218,18 +219,9 @@ mod tests {
         index.add_all(vec![a, b], git2::IndexAddOption::DEFAULT, None)?;
         index.write()?;
 
-        let working_dir_abs_path = repo_dir.path().join("1");
-
         let mut mock = MockExecutor::new();
         mock.expect_execute()
             .times(1)
-            .withf(
-                move |working_dir: &Path, hook_path: &Path, args: &Vec<String>| {
-                    working_dir == working_dir_abs_path
-                        && hook_path == pre_commit_abs_path
-                        && args.len() == 0
-                },
-            )
             .returning(|_, _, _| Ok(0));
 
         run(
@@ -245,6 +237,37 @@ mod tests {
 
     #[test]
     fn should_exit_if_hook_exit_with_error() -> Result<()> {
-        todo!()
+        let repo_dir = TempDir::new("repo")?;
+
+        std::fs::create_dir(repo_dir.path().join("1"))?;
+        std::fs::create_dir(repo_dir.path().join("1/git-hooks"))?;
+
+        let a = Path::new("1/a");
+        std::fs::File::create(repo_dir.path().join(a))?.write_all("a".as_bytes())?;
+
+        let pre_commit_abs_path = repo_dir.path().join("1/git-hooks/pre-commit");
+        std::fs::File::create(pre_commit_abs_path.as_path())?;
+
+        let repo = git2::Repository::init(repo_dir.path()).unwrap();
+        let mut index = repo.index()?;
+        index.add_all(vec![a], git2::IndexAddOption::DEFAULT, None)?;
+        index.write()?;
+
+        let mut mock = MockExecutor::new();
+        mock.expect_execute()
+            .times(1)
+            .returning(|_, _, _| Ok(1));
+
+        let status_code = run(
+            repo_dir.path(),
+            "pre-commit",
+            &vec![],
+            &mock,
+            vec!["git-hooks".to_string()],
+        )?;
+
+        assert_eq!(status_code, 1);
+
+        Ok(())
     }
 }
