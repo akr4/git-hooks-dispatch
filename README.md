@@ -12,7 +12,7 @@ Hook file (e.g. `.git/hooks/pre-commit`)
 
 ```
 #!/bin/sh
-git-hooks-dispatch $(basename $0) "$@"
+git-hooks-dispatch $(basename $0) -- "$@"
 ```
 
 Make sure the file has permission to execute.
