@@ -5,7 +5,7 @@ pub struct Hook {
 }
 
 impl Hook {
-    pub fn find_hook(path: &Path, hook_type: HookType, hooks_dir_names: &Vec<String>) -> Option<Self> {
+    pub fn find_hook(path: &Path, hook_type: &str, hooks_dir_names: &Vec<String>) -> Option<Self> {
         if !path.is_dir() {
             return None;
         }
@@ -16,7 +16,7 @@ impl Hook {
         }
         let hooks_dir = hooks_dir.unwrap();
 
-        let hook_file = hooks_dir.join(hook_type.filename());
+        let hook_file = hooks_dir.join(hook_type);
 
         if !hook_file.exists() {
             return None;
@@ -36,27 +36,4 @@ fn find_hooks_dir(path: &Path, names: &Vec<String>) -> Option<PathBuf> {
     }
 
     None
-}
-
-#[derive(Copy, Clone)]
-pub enum HookType {
-    PreCommit,
-    PostRewrite,
-}
-
-impl HookType {
-    pub fn from_name(name: &str) -> Option<Self> {
-        match name {
-            "pre-commit" => Some(HookType::PreCommit),
-            "post-rewrite" => Some(HookType::PostRewrite),
-            _ => None,
-        }
-    }
-
-    pub fn filename(&self) -> String {
-        match self {
-            Self::PreCommit => "pre-commit".to_string(),
-            Self::PostRewrite => "post-rewrite".to_string(),
-        }
-    }
 }

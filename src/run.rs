@@ -1,5 +1,5 @@
 use crate::executor::Executor;
-use crate::hook::{Hook, HookType};
+use crate::hook::Hook;
 use anyhow::Result;
 use git2::Status;
 use std::path::Path;
@@ -16,13 +16,6 @@ pub fn run<P: AsRef<Path>, E: Executor>(
     debug_assert!(repo_dir.as_ref().is_absolute());
 
     log::debug!("hooks_dir_names = {:?}", hooks_dir_names);
-
-    let hook_type = HookType::from_name(hook_name);
-    if hook_type.is_none() {
-        log::error!("invalid hook name {}", hook_name);
-        return Ok(1);
-    }
-    let hook_type = hook_type.unwrap();
 
     let repo = git2::Repository::open(repo_dir.as_ref().clone()).unwrap();
     for e in repo.statuses(None).unwrap().iter() {
@@ -49,7 +42,7 @@ pub fn run<P: AsRef<Path>, E: Executor>(
                     .to_str()
                     .ok_or(anyhow::Error::msg("failed to convert path to string"))?
             );
-            let hook = Hook::find_hook(&abs_path, hook_type, &hooks_dir_names);
+            let hook = Hook::find_hook(&abs_path, hook_name, &hooks_dir_names);
             if let Some(hook) = hook {
                 let hook_path_str = hook
                     .path
@@ -90,10 +83,10 @@ mod tests {
     use super::run;
     use crate::executor::MockExecutor;
     use anyhow::Result;
+    use mockall::Sequence;
     use std::io::Write;
     use std::path::Path;
     use tempdir::TempDir;
-    use mockall::Sequence;
 
     #[test]
     fn should_run_hook() -> Result<()> {
@@ -220,9 +213,7 @@ mod tests {
         index.write()?;
 
         let mut mock = MockExecutor::new();
-        mock.expect_execute()
-            .times(1)
-            .returning(|_, _, _| Ok(0));
+        mock.expect_execute().times(1).returning(|_, _, _| Ok(0));
 
         run(
             repo_dir.path(),
@@ -254,9 +245,7 @@ mod tests {
         index.write()?;
 
         let mut mock = MockExecutor::new();
-        mock.expect_execute()
-            .times(1)
-            .returning(|_, _, _| Ok(1));
+        mock.expect_execute().times(1).returning(|_, _, _| Ok(1));
 
         let status_code = run(
             repo_dir.path(),
