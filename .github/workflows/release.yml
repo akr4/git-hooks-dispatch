@@ -14,5 +14,6 @@ jobs:
 
     - name: Release
       run: |
+        cargo install cargo-release
         cargo login ${CRATES_IO_TOKEN}
         cargo release
