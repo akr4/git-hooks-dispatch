@@ -1,6 +1,6 @@
 [package]
 name = "git-hooks-dispatch"
-version = "0.2.0-dev"
+version = "0.2.0"
 authors = ["Akira Ueda <ue@gol.com>"]
 edition = "2018"
 license = "MIT"
