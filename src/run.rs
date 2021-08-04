@@ -3,6 +3,7 @@ use crate::hook::Hook;
 use anyhow::Result;
 use git2::Status;
 use std::path::Path;
+use std::collections::HashSet;
 
 type StatusCode = i32;
 
@@ -16,6 +17,8 @@ pub fn run<P: AsRef<Path>, E: Executor>(
     debug_assert!(repo_dir.as_ref().is_absolute());
 
     log::debug!("hooks_dir_names = {:?}", hooks_dir_names);
+
+    let mut executed_hooks = HashSet::new();
 
     let repo = git2::Repository::open(repo_dir.as_ref().clone()).unwrap();
     for e in repo.statuses(None).unwrap().iter() {
@@ -48,6 +51,11 @@ pub fn run<P: AsRef<Path>, E: Executor>(
             );
             let hook = Hook::find_hook(&abs_path, hook_name, &hooks_dir_names);
             if let Some(hook) = hook {
+                if executed_hooks.contains(&hook) {
+                    log::debug!("skip hook {}", hook.path.display());
+                    continue;
+                }
+
                 let hook_path_str = hook
                     .path
                     .to_str()
@@ -63,6 +71,7 @@ pub fn run<P: AsRef<Path>, E: Executor>(
                     log::error!("hook exit with status code ({})", status);
                     return Ok(status);
                 }
+                executed_hooks.insert(hook);
             }
         }
     }
@@ -206,7 +215,7 @@ mod tests {
         let a = Path::new("1/a");
         std::fs::File::create(repo_dir.path().join(a))?.write_all("a".as_bytes())?;
         let b = Path::new("1/b");
-        std::fs::File::create(repo_dir.path().join(a))?.write_all("a".as_bytes())?;
+        std::fs::File::create(repo_dir.path().join(b))?.write_all("b".as_bytes())?;
 
         let pre_commit_abs_path = repo_dir.path().join("1/git-hooks/pre-commit");
         std::fs::File::create(pre_commit_abs_path.as_path())?;

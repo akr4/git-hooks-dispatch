@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+#[derive(PartialEq, Eq, Hash)]
 pub struct Hook {
     pub path: PathBuf,
 }
