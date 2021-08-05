@@ -27,7 +27,10 @@ impl Hook {
 
         debug_assert!(hook_file.is_absolute());
 
-        Some(Hook { path: hook_file, base_dir: path.to_path_buf() })
+        Some(Hook {
+            path: hook_file,
+            base_dir: path.to_path_buf(),
+        })
     }
 }
 

@@ -41,8 +41,8 @@ fn gather_hooks<P: AsRef<Path>>(
     hook_name: &str,
     hooks_dir_names: Vec<String>,
 ) -> Result<Vec<Hook>> {
-    let mut hook_set = HashSet::new();
-    let mut hooks = vec![];
+    let mut hook_set: HashSet<Hook> = HashSet::new();
+    let mut hooks: Vec<Hook> = vec![];
 
     let repo = git2::Repository::open(repo_dir.as_ref().clone()).unwrap();
     for e in repo.statuses(None).unwrap().iter() {
@@ -85,7 +85,11 @@ fn gather_hooks<P: AsRef<Path>>(
     Ok(hooks)
 }
 
-fn execute_hooks<E: Executor>(hooks: Vec<Hook>, args: &Vec<String>, executor: &E) -> Result<StatusCode> {
+fn execute_hooks<E: Executor>(
+    hooks: Vec<Hook>,
+    args: &Vec<String>,
+    executor: &E,
+) -> Result<StatusCode> {
     for hook in hooks {
         log::info!(
             "executing hook ({}) in ({})",
