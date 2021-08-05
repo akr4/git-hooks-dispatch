@@ -1,8 +1,10 @@
 use std::path::{Path, PathBuf};
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Hook {
     pub path: PathBuf,
+    /// corresponding project dir path (`/foo/bar` for `/foo/bar/.git-repo/pre-commit`)
+    pub base_dir: PathBuf,
 }
 
 impl Hook {
@@ -23,7 +25,9 @@ impl Hook {
             return None;
         }
 
-        Some(Hook { path: hook_file })
+        debug_assert!(hook_file.is_absolute());
+
+        Some(Hook { path: hook_file, base_dir: path.to_path_buf() })
     }
 }
 

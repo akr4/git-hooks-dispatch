@@ -2,8 +2,8 @@ use crate::executor::Executor;
 use crate::hook::Hook;
 use anyhow::Result;
 use git2::Status;
-use std::path::Path;
 use std::collections::HashSet;
+use std::path::Path;
 
 type StatusCode = i32;
 
@@ -18,7 +18,31 @@ pub fn run<P: AsRef<Path>, E: Executor>(
 
     log::debug!("hooks_dir_names = {:?}", hooks_dir_names);
 
-    let mut executed_hooks = HashSet::new();
+    let hooks = gather_hooks(repo_dir, hook_name, hooks_dir_names)?;
+    let status_code = execute_hooks(hooks, args, executor)?;
+
+    Ok(status_code)
+}
+
+fn is_changed(status: Status) -> bool {
+    status.is_index_deleted()
+        || status.is_index_modified()
+        || status.is_index_new()
+        || status.is_index_renamed()
+        || status.is_index_typechange()
+        || status.is_wt_deleted()
+        || status.is_wt_modified()
+        || status.is_wt_renamed()
+        || status.is_wt_typechange()
+}
+
+fn gather_hooks<P: AsRef<Path>>(
+    repo_dir: P,
+    hook_name: &str,
+    hooks_dir_names: Vec<String>,
+) -> Result<Vec<Hook>> {
+    let mut hook_set = HashSet::new();
+    let mut hooks = vec![];
 
     let repo = git2::Repository::open(repo_dir.as_ref().clone()).unwrap();
     for e in repo.statuses(None).unwrap().iter() {
@@ -43,52 +67,39 @@ pub fn run<P: AsRef<Path>, E: Executor>(
                 log::debug!("found the repo dir");
                 break;
             }
-            log::debug!(
-                "searching hook in {}",
-                abs_path
-                    .to_str()
-                    .ok_or(anyhow::Error::msg("failed to convert path to string"))?
-            );
+            log::debug!("searching hook in {}", abs_path.display());
             let hook = Hook::find_hook(&abs_path, hook_name, &hooks_dir_names);
             if let Some(hook) = hook {
-                if executed_hooks.contains(&hook) {
+                if hook_set.contains(&hook) {
                     log::debug!("skip hook {}", hook.path.display());
                     continue;
                 }
 
-                let hook_path_str = hook
-                    .path
-                    .to_str()
-                    .ok_or(anyhow::Error::msg("failed to convert path to string"))?;
-                log::debug!("found hook {}", hook_path_str);
-                log::info!(
-                    "executing hook ({}) in ({})",
-                    hook_path_str,
-                    abs_path.display()
-                );
-                let status = executor.execute(&abs_path, &hook.path, args)?;
-                if status != 0 {
-                    log::error!("hook exit with status code ({})", status);
-                    return Ok(status);
-                }
-                executed_hooks.insert(hook);
+                log::debug!("found hook {}", hook.path.display());
+                hook_set.insert(hook.clone());
+                hooks.push(hook);
             }
         }
     }
 
-    Ok(0)
+    Ok(hooks)
 }
 
-fn is_changed(status: Status) -> bool {
-    status.is_index_deleted()
-        || status.is_index_modified()
-        || status.is_index_new()
-        || status.is_index_renamed()
-        || status.is_index_typechange()
-        || status.is_wt_deleted()
-        || status.is_wt_modified()
-        || status.is_wt_renamed()
-        || status.is_wt_typechange()
+fn execute_hooks<E: Executor>(hooks: Vec<Hook>, args: &Vec<String>, executor: &E) -> Result<StatusCode> {
+    for hook in hooks {
+        log::info!(
+            "executing hook ({}) in ({})",
+            hook.path.display(),
+            hook.base_dir.display()
+        );
+        let status = executor.execute(&hook.base_dir, &hook.path, args)?;
+        if status != 0 {
+            log::error!("hook exit with status code ({})", status);
+            return Ok(status);
+        }
+    }
+
+    Ok(0)
 }
 
 #[cfg(test)]
