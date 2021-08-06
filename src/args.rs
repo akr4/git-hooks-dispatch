@@ -7,6 +7,8 @@ pub struct Opt {
     pub hook: String,
     #[structopt(name = "hooks-dir", short, long)]
     pub hooks_dir: Option<String>,
-    #[structopt(name = "ARG")]
+    #[structopt(short, long)]
+    pub verbose: bool,
+    #[structopt(name = "arg")]
     pub args: Vec<String>,
 }

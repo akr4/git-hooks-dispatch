@@ -13,13 +13,14 @@ pub fn run<P: AsRef<Path>, E: Executor>(
     args: &Vec<String>,
     executor: &E,
     hooks_dir_names: Vec<String>,
+    verbose: bool,
 ) -> Result<StatusCode> {
     debug_assert!(repo_dir.as_ref().is_absolute());
 
     log::debug!("hooks_dir_names = {:?}", hooks_dir_names);
 
     let hooks = gather_hooks(repo_dir, hook_name, hooks_dir_names)?;
-    let status_code = execute_hooks(hooks, args, executor)?;
+    let status_code = execute_hooks(hooks, args, executor, verbose)?;
 
     Ok(status_code)
 }
@@ -89,8 +90,12 @@ fn execute_hooks<E: Executor>(
     hooks: Vec<Hook>,
     args: &Vec<String>,
     executor: &E,
+    verbose: bool,
 ) -> Result<StatusCode> {
     for hook in hooks {
+        if verbose {
+            println!("git-hooks-dispatch: Executing hook ({})", hook.path.display());
+        }
         log::info!(
             "executing hook ({}) in ({})",
             hook.path.display(),
@@ -154,6 +159,7 @@ mod tests {
             &vec![],
             &mock,
             vec!["git-hooks".to_string()],
+            false,
         )?;
 
         Ok(())
@@ -215,6 +221,7 @@ mod tests {
             &vec![],
             &mock,
             vec!["git-hooks".to_string()],
+            false,
         )?;
 
         Ok(())
@@ -249,6 +256,7 @@ mod tests {
             &vec![],
             &mock,
             vec!["git-hooks".to_string()],
+            false,
         )?;
 
         Ok(())
@@ -281,6 +289,7 @@ mod tests {
             &vec![],
             &mock,
             vec!["git-hooks".to_string()],
+            false,
         )?;
 
         assert_eq!(status_code, 1);
@@ -329,6 +338,7 @@ mod tests {
             &vec![],
             &mock,
             vec!["git-hooks".to_string()],
+            false,
         )?;
 
         Ok(())
