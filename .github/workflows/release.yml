@@ -29,4 +29,4 @@ jobs:
 
     - name: Release
       run: |
-        cargo release --no-confirm
+        cargo release --no-confirm --dev-version-ext dev
