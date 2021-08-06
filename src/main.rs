@@ -22,6 +22,7 @@ fn main() -> Result<()> {
         &opt.args,
         &executor::ExecutorImpl::new(),
         hooks_dir_names,
+        opt.verbose,
     )?;
     std::process::exit(status_code);
 }
