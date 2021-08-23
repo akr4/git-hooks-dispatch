@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use anyhow::Result;
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Hook {
@@ -31,6 +32,10 @@ impl Hook {
             path: hook_file,
             base_dir: path.to_path_buf(),
         })
+    }
+
+    pub fn base_dir_from_repo_dir<P: AsRef<Path>>(&self, repo_dir: P) -> Result<PathBuf> {
+        Ok(self.base_dir.strip_prefix(repo_dir)?.to_path_buf())
     }
 }
 

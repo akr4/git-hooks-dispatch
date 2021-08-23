@@ -19,8 +19,8 @@ pub fn run<P: AsRef<Path>, E: Executor>(
 
     log::debug!("hooks_dir_names = {:?}", hooks_dir_names);
 
-    let hooks = gather_hooks(repo_dir, hook_name, hooks_dir_names)?;
-    let status_code = execute_hooks(hooks, args, executor, verbose)?;
+    let hooks = gather_hooks(&repo_dir, hook_name, hooks_dir_names)?;
+    let status_code = execute_hooks(&repo_dir, hooks, args, executor, verbose)?;
 
     Ok(status_code)
 }
@@ -86,15 +86,18 @@ fn gather_hooks<P: AsRef<Path>>(
     Ok(hooks)
 }
 
-fn execute_hooks<E: Executor>(
+fn execute_hooks<P: AsRef<Path>, E: Executor>(
+    repo_dir: P,
     hooks: Vec<Hook>,
     args: &Vec<String>,
     executor: &E,
     verbose: bool,
 ) -> Result<StatusCode> {
+    debug_assert!(repo_dir.as_ref().is_absolute());
+
     for hook in hooks {
         if verbose {
-            println!("git-hooks-dispatch: Executing hook ({})", hook.path.display());
+            println!("git-hooks-dispatch: Executing hook ({})", hook.base_dir_from_repo_dir(&repo_dir)?.display());
         }
         log::info!(
             "executing hook ({}) in ({})",
