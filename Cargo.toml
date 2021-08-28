@@ -15,6 +15,7 @@ github = { repository = "akr4/git-hooks-dispatch", workflow = "test" }
 
 [dependencies]
 anyhow = "1.0.42"
+colored = "2.0.0"
 env_logger = "0.9.0"
 git2 = "0.13.20"
 log = "0.4.14"

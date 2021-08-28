@@ -80,6 +80,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "colored"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3616f750b84d8f0de8a58bda93e08e2a81ad3f523089b05f1dffecab48c6cbd"
+dependencies = [
+ "atty",
+ "lazy_static",
+ "winapi",
+]
+
+[[package]]
 name = "difference"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -140,6 +151,7 @@ name = "git-hooks-dispatch"
 version = "0.4.1-dev"
 dependencies = [
  "anyhow",
+ "colored",
  "env_logger",
  "git2",
  "log",

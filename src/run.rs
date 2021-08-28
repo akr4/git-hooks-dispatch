@@ -4,6 +4,7 @@ use anyhow::Result;
 use git2::Status;
 use std::collections::HashSet;
 use std::path::Path;
+use colored::*;
 
 type StatusCode = i32;
 
@@ -97,7 +98,9 @@ fn execute_hooks<P: AsRef<Path>, E: Executor>(
 
     for hook in hooks {
         if verbose {
-            println!("git-hooks-dispatch: Executing hook ({})", hook.base_dir_from_repo_dir(&repo_dir)?.display());
+            println!("git-hooks-dispatch: {executing} ({hook})",
+                executing="Executing hook".green().bold(),
+                     hook=hook.base_dir_from_repo_dir(&repo_dir)?.display().to_string().as_str().bright_white());
         }
         log::info!(
             "executing hook ({}) in ({})",
