@@ -6,6 +6,15 @@ Run hooks only in a directory where files are changed. Useful for monorepo.
 
 ## Install
 
+Homebrew
+
+```
+ brew tap akr4/tap
+ brew install git-hooks-dispatch
+```
+
+Cargo
+
 ```
 cargo install git-hooks-dispatch
 ```
